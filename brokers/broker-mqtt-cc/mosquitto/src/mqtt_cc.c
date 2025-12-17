@@ -41,7 +41,8 @@ void store_lat_qos(struct mosquitto *context, char* sub_with_lat_qos){
     //log__printf(NULL, MOSQ_LOG_DEBUG, "\t in store_lat_qos");
     char *latencyStr = "%latency%";
     //log__printf(NULL, MOSQ_LOG_DEBUG, "\t before strstr");
-    char* result = strstr(sub_with_lat_qos, latencyStr); // result points at %latenct%* in sub_with_lat_qos
+    char* result = strstr(sub_with_lat_qos, latencyStr); // result points at %latency%* in sub_with_lat_qos
+    //looks for %latency%
     //log__printf(NULL, MOSQ_LOG_DEBUG, "\t after strstr");
     size_t latStr_len = strlen(result); 
     //allocate the necessary memory for holding just the latency in context
@@ -81,59 +82,10 @@ char *concat_strings(char *str1, char *str2) {
     return result;
 }
 
-// void *messageClient(void *arg){
-//     struct mosquitto* context = (struct mosquitto*)arg;
-//     // Command to execute
-//     const char *dir = "pwd";
-//     int check = system(dir);
-//     char *latChangeCommand = "mosquitto_pub -u internal -P mqttcci -t subs/change -m ";
-//     char *newSubCommand = "mosquitto_pub -u internal -P mqttcci -t subs/add -m ";
-//     char *finalCommand;
-//     //log__printf(NULL, MOSQ_LOG_DEBUG, "\t In messageClient, topic = : %s", context->mqtt_cc.incoming_topic);
-//     if(context->mqtt_cc.latChange){// if client being messaged from a change in max_allowed_latency
-//         printf("there was a lat change");
-//         finalCommand = concat_strings(latChangeCommand, context->mqtt_cc.incoming_topic);
-//     }
-//     else{
-//         printf("there was NO lat change");
-//         finalCommand = concat_strings(newSubCommand, context->mqtt_cc.incoming_topic);
-//     }
-//     //log__printf(NULL, MOSQ_LOG_DEBUG, "\t Final Command: %s", finalCommand);
-//     //log__printf(NULL, MOSQ_LOG_DEBUG, "\t for topic: %s", context->mqtt_cc.incoming_topic);
-//     // Execute the bash script
-//     int ret = system(finalCommand);
-
-//     // Check if script execution was successful
-//     if (ret == 0) {
-//         printf("Script executed successfully.\n");
-//     } else {
-//         printf("Failed to execute the script.\n");
-//     }
-//     // Exit the thread
-//     pthread_exit(NULL);
-
-
-//     // // Execute the command
-//     // int result = system(command);
-    
-//     //     // Check the result
-//     // if (result == -1) {
-//     //     // Failed to execute the command
-//     //     perror("Error executing the command");
-//     // } else if (result != 0) {
-//     //     // Command returned an error
-//     //     printf("Command returned non-zero exit code: %d\n", result);
-//     // }
-
-//     // Command executed successfully
-//     printf("Command executed successfully\n");
-
-// }
-
 void prepare_DB(){
 	log__printf(NULL, MOSQ_LOG_INFO, "in prepare DB");
-
-    prototype_db.db_path = "/home/devnico/repos/research/mqtt_cc_research/sqlite/mqttcc-oursystem.db";
+        //sala
+    prototype_db.db_path = "/mnt/c/Users/sala_/OneDrive/Documents/MQTTRESEARCH/mqtt-cc-research/brokers/broker-mqtt-cc/mosquitto/db/database.db";
 	//log__printf(NULL, MOSQ_LOG_INFO, "after set db_path %s", prototype_db.db_path);
 
 
@@ -158,6 +110,7 @@ void prepare_DB(){
         sqlite3_free(err_msg);
     }
     // Statement Commands
+    //The user needs to append the values to this sqlite statement
     const char *find_existing_topic_cmd = "SELECT * FROM subscriptions WHERE subscription = ?1";
     const char *insert_new_topic_cmd = "INSERT INTO subscriptions (subscription, latency_req, max_allowed_latency, added, lat_change) VALUES (?1, ?2, ?3, ?4, ?5)";
     const char *update_latency_req_max_allowed_cmd = "UPDATE subscriptions SET latency_req = ?1, max_allowed_latency = ?2, lat_change = ?3 WHERE subscription = ?4";
@@ -173,7 +126,8 @@ void prepare_DB(){
     }
         // insert new topic statement
     rc = sqlite3_prepare_v2(prototype_db.db, insert_new_topic_cmd, -1, &prototype_db.insert_new_topic, 0);
-    if (rc != SQLITE_OK) {
+    // this creates and compiles an sql statement that is stored in insert_new_topic.
+    if (rc != SQLITE_OK) {  
         log__printf(NULL, MOSQ_LOG_ERR, "Failed to prepare statement 2: %s\n", sqlite3_errmsg(prototype_db.db));
         sqlite3_close(prototype_db.db);
         exit(1);
@@ -191,6 +145,8 @@ void prepare_DB(){
 } // (called in mosquitto.c's main )
 
 bool topic_exists_in_DB(struct mosquitto *context){
+    log__printf(NULL, MOSQ_LOG_DEBUG, "\ Checking for topic");
+
     int rc;
     int rc2;
     bool returnValue;
@@ -235,6 +191,8 @@ char* create_latency_str(char *clientid, int latencyNum){
 }
 
 void insert_topic_in_DB(struct mosquitto *context){
+    log__printf(NULL, MOSQ_LOG_INFO, "I am in insert_topic_in_DB");
+    log__printf(NULL, MOSQ_LOG_INFO, context->mqtt_cc.incoming_topic);
     int rc;
     int rc2; 
     //pthread_t mess_client;
@@ -249,6 +207,7 @@ void insert_topic_in_DB(struct mosquitto *context){
     sqlite3_bind_int(prototype_db.insert_new_topic, 4, 1);
     sqlite3_bind_int(prototype_db.insert_new_topic, 5, 0);
     //execute statement
+  
     rc = sqlite3_step(prototype_db.insert_new_topic);
 	sleep(2);
     //check for error 
@@ -275,6 +234,7 @@ void insert_topic_in_DB(struct mosquitto *context){
 	// pthread_create(&mess_client, &mess_client_attr, messageClient, (void*)context);
 	// pthread_attr_destroy(&mess_client_attr);
 }
+
 
 int calc_new_max_latency(struct cJSON *latencies){
     int numLatencies = 0;

@@ -1,0 +1,20 @@
+/mnt/c/Users/sala_/OneDrive/Documents/MQTTRESEARCH/mqtt-cc-research/network-testbed/subs/subscriber3.py:88: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  client = mqtt.Client()
+[SUB] Connecting to localhost:1883 …
+[SUB] Connected – subscribing to control topic…
+[SUB] Subscribed to 99:33:44:99/subscriber/tasks=Temperature,Motion,Humidity;Max_Latency=500,400,250;Accuracy=84,85,86;Min_Frequency=6,6,6;
+
+[SUB] Incoming:
+  Topic: 99:33:44:99/subscriber/tasks=Temperature,Motion,Humidity;Max_Latency=500,400,250;Accuracy=84,85,86;Min_Frequency=6,6,6;
+  Payload: 12:13:14:12/Motion
+  → Subscribed to '12:13:14:12/Motion'
+
+[SUB] Incoming:
+  Topic: 99:33:44:99/subscriber/tasks=Temperature,Motion,Humidity;Max_Latency=500,400,250;Accuracy=84,85,86;Min_Frequency=6,6,6;
+  Payload: 00:22:13:77/Humidity
+  → Subscribed to '00:22:13:77/Humidity'
+
+[SUB] Incoming:
+  Topic: 99:33:44:99/subscriber/tasks=Temperature,Motion,Humidity;Max_Latency=500,400,250;Accuracy=84,85,86;Min_Frequency=6,6,6;
+  Payload: 00:66:13:12/Temperature
+  → Subscribed to '00:66:13:12/Temperature'

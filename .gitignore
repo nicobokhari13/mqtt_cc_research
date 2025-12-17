@@ -52,3 +52,7 @@ broker-oursystem/logs/mqtt_cc.log
 mqtt_cc.log
 metrics-*.csv
 *-capture.csv
+network-sim/src/mqtt-cc/client/virtualpahomqtt/
+network-sim/src/mqtt-cc/devs/virtual/virtualpaho/
+network-sim/src/mqtt-cc/middleware/client/virtualpahomqtt/
+network-sim/src/mqtt-cc/subs/virtualpahomqtt/

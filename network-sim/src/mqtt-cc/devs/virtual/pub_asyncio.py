@@ -1,6 +1,6 @@
 import asyncio
 import socket
-import sys 
+import sys
 import paho.mqtt.client as mqtt
 import pub_utils
 import psutil
@@ -24,7 +24,7 @@ class AsyncioHelper:
         def cb():
             client.loop_read()
 
-        self.loop.add_reader(sock, cb) 
+        self.loop.add_reader(sock, cb)
         self.misc = self.loop.create_task(self.misc_loop())
 
     def on_socket_close(self, client, userdata, sock):
@@ -36,15 +36,15 @@ class AsyncioHelper:
         def cb():
             client.loop_write()
 
-        self.loop.add_writer(sock, cb) 
-        
+        self.loop.add_writer(sock, cb)
+
     def on_socket_unregister_write(self, client, userdata, sock):
         self.loop.remove_writer(sock)
 
     async def misc_loop(self):
         while self.client.loop_misc() == mqtt.MQTT_ERR_SUCCESS:
             try:
-                await asyncio.sleep(5)   
+                await asyncio.sleep(5)
             except asyncio.CancelledError:
                 break
 
@@ -54,9 +54,10 @@ class AsyncMqtt:
         self.tasks = set()
 
     def on_connect(self, client, userdata, flags, rc):
-        if(rc == 5):
+        if rc == 5:
             sys.exit()
-        client.subscribe(utils._CMD_TOPIC,qos=1)
+        client.subscribe(utils._CMD_TOPIC, qos=1)
+        print("This on_connect publisher function gets called sala!!")
 
     async def waitForCmd(self):
         cmd = await self.got_message
@@ -64,7 +65,7 @@ class AsyncMqtt:
 
     def on_message(self, client, userdata, msg):
         if mqtt.topic_matches_sub(msg.topic, utils._CMD_TOPIC):
-            print(f"{utils._deviceMac} received command: {msg.payload.decode()}")
+            print(f"{utils._deviceMac} received command: {msg.payload.decode()} this is the topic the devices is subscribed to: {msg.topic}")
             self.got_message.set_result(msg.payload.decode())
 
     def on_disconnect(self, client, userdata, rc):
@@ -87,12 +88,11 @@ class AsyncMqtt:
                     sys.exit()
             else:
                 utils.getExperimentEnergy()
-                
+
             status_json = {
                 "time": current_time,
                 "deviceMac": utils._deviceMac,
                 "battery": utils._battery,
-                #"cpu_temperature": utils.get_cpu_temperature(),
                 "cpu_temperature": "None",
                 "cpu_utilization_percentage": "None",
                 "memory_utilization_percentage": "None"
@@ -102,118 +102,144 @@ class AsyncMqtt:
             print("status =")
             print(status_str)
             # publish status to status topic
-
-            self.client.publish(topic = utils._STATUS_TOPIC, payload = status_str,qos=1)
+            self.client.publish(topic=utils._STATUS_TOPIC, payload=status_str, qos=1)
             print(f"{utils._deviceMac} publishing status")
-
 
     async def publish_to_topic(self, sense_topic, freq):
         msg = "1" * 500000
         while True:
-            self.client.publish(topic = sense_topic, payload = msg,qos=1)
+            self.client.publish(topic=sense_topic, payload=msg, qos=1)
             await asyncio.sleep(freq)
             print(f"{utils._deviceMac} publishing on {sense_topic}")
-    
-    async def separateExecutionsAndAssignments(self, command:str):
+
+    async def separateExecutionsAndAssignments(self, command: str):
         # find the comma
-        index = len(command) - 1
-        while index >= 0:
-            if command[index] == ",":
-                break
-            index -= 1
-        assignments = command[:index]
-        consumption = command[index + 1:]
+        index = command.rfind(',')
+        assignments = command[:index].strip()
+        consumption = command[index + 1:].strip()
         print(f"{utils._deviceMac} assignments {assignments}")
         print(f"consuming {consumption} every minute")
         print("=================")
-        utils.saveConsumption(energy=consumption)
-        return assignments
+        return assignments, consumption
 
     async def main(self):
-        # main execution        
+        # Main execution
         self.disconnected = self.loop.create_future()
 
+        # Initialize MQTT client and assign callbacks
         self.client = mqtt.Client()
         self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message 
+        self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
         self.got_message = None
 
-        # set other necessary parameters for the client
-        #self.client.username_pw_set(username=utils._USERNAME, password=utils._PASSWORD)
+        # Start the AsyncioHelper
         aioh = AsyncioHelper(self.loop, self.client)
         self.client.connect("localhost", 1885, keepalive=1000)
         self.client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
-        
-        self.got_message = self.loop.create_future()
-        
-        if not utils._publishes: 
 
-            # if nothing to publish yet (at start up)
-            print("waiting for publish")
-            # cmd = await utils._got_cmd # wait for command to come
-            cmd = await self.got_message # wait for command to come
-            # if in the sim, get separate the executions 
-            if utils._IN_SIM:
-                cmd = await self.separateExecutionsAndAssignments(cmd)
-            # once we have command, set publishings
-            utils.setPublishing(json.loads(cmd))
+        self.got_message = self.loop.create_future()
+
+        # Wait for the first publishing command
+        if not utils._publishes:
+            print("Waiting for a command to start publishing.")
+
+            # Wait for the command to arrive
+            cmd = await self.got_message
+            print(f"Received command: {cmd}")
+
+            # Parse the JSON command and extract details
+            try:
+                parsed_cmd = json.loads(cmd)  # Convert JSON string to a dictionary
+                topic = parsed_cmd.get("topic")  # Extract the topic
+                latency = parsed_cmd.get("latency")  # Extract the latency
+
+                # Separate into a list of items
+                cmd_list = [topic, latency]
+                print(f"Parsed command as list: {cmd_list}")
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON command: {e}")
+                return
+            except KeyError as e:
+                print(f"Missing expected key in command: {e}")
+                return
+
+            # Handle the parsed command and set publishing details
+            utils.setPublishing({'topics': [{"topic": topic, "value": latency}]})
+
+            # Create publishing routines
             if utils._publishes:
-            # create sensing_task routines
-                routines = [self.publish_to_topic(topic, freq) for topic,freq in utils._publishes.items()]
-            else: 
+                routines = [
+                    self.publish_to_topic(topic_detail['topic'], topic_detail['value'])
+                    for topic_detail in utils._publishes.get('topics', [])
+                ]
+            else:
                 routines = []
-            # reset command
+
+            # Initialize new publishing and status update tasks
             self.got_message = self.loop.create_future()
-            
-            # tasks are the publishing tasks assigned to the publisher
-            for coro in routines: 
+            for coro in routines:
                 self.tasks.add(asyncio.create_task(coro))
-            
-            # also add waiting for command from prototype
+
             self.tasks.add(asyncio.create_task(self.waitForCmd()))
             self.tasks.add(asyncio.create_task(self.waitForStatus()))
 
-        while True: #infinite loop
+        # Main loop for running tasks
+        while True:
             try:
-                print("running tasks")
+                print("Running tasks.")
                 done, pending = await asyncio.wait(self.tasks, return_when=asyncio.FIRST_COMPLETED)
-                # run the tasks until 1 completes
 
-                # get the "returned" value from the done task
+                # Process the completed task
                 result = done.pop().result()
-                # sensing tasks return None, waitForCmd returns the command
-                print(f"{utils._deviceMac} canceling other tasks")
-                # cancel other sensing tasks
+                print(f"Task completed with result: {result}")
 
+                # Cancel remaining tasks
                 for unfinished_task in pending:
                     unfinished_task.cancel()
-                    self.tasks = set()
+                self.tasks = set()
 
-                # check if simulation, if so, get the num executions out of the command
-                if utils._IN_SIM:
-                    result = await self.separateExecutionsAndAssignments(result)
-                    # save executions in utils
-                utils.setPublishing(json.loads(result))
+                # Parse the new command
+                try:
+                    parsed_result = json.loads(result)
+                    topic = parsed_result.get("topic")
+                    latency = parsed_result.get("latency")
+
+                    # Separate into a list
+                    result_list = [topic, latency]
+                    print(f"Parsed result as list: {result_list}")
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON result: {e}")
+                    return
+                except KeyError as e:
+                    print(f"Missing expected key in result: {e}")
+                    return
+
+                # Update publishing details
+                utils.setPublishing({'topics': [{"topic": topic, "value": latency}]})
+
+                # Reinitialize publishing routines
                 if utils._publishes:
-                    routines = [self.publish_to_topic(topic, freq) for topic,freq in utils._publishes.items()]
+                    routines = [
+                        self.publish_to_topic(topic_detail['topic'], topic_detail['value'])
+                        for topic_detail in utils._publishes.get('topics', [])
+                    ]
                 else:
                     routines = []
-                #self.tasks = [asyncio.create_task(coro) for coro in routines]
-                for coro in routines: 
+
+                for coro in routines:
                     self.tasks.add(asyncio.create_task(coro))
+
+                # Reinitialize command and status tasks
                 self.tasks.add(asyncio.create_task(self.waitForCmd()))
                 self.tasks.add(asyncio.create_task(self.waitForStatus()))
-                # reset got cmd
-                #utils._got_cmd = self.loop.create_future()
                 self.got_message = self.loop.create_future()
-                    # tasks are the publishing tasks assigned to the publisher
-                    # also add waiting for command from prototype
+
             except asyncio.CancelledError:
-                print("asyncio cancelled")
+                print("Task cancelled.")
 
 def run_async_publisher():
-    print(f"{utils._deviceMac} Starting")
+    print(f"{utils._deviceMac} Starting Publisher Context")
     loop = asyncio.get_event_loop()
     loop.run_until_complete(AsyncMqtt(loop).main())
     loop.close()
@@ -221,4 +247,3 @@ def run_async_publisher():
 
 if __name__ == "__main__":
     run_async_publisher()
-

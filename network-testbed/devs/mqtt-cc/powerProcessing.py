@@ -1,4 +1,6 @@
-from gpiozero import MCP3008
+#from gpiozero import MCP3008
+
+
 # import pigpio 
 # pi = pigpio.pi()
 
@@ -20,16 +22,16 @@ CH_0_DIVISION_CONSTANT = (0.4524 + 0.5526)/2
 STUNT_RESISTOR_OHMS = 1000
 
 def readVoltage():
-    channel0 = MCP3008(channel = 0)
-    analogValue = float(channel0.value)
+    channel0 ="30"# MCP3008(channel = 0)
+    analogValue = 80.0#float(channel0.value)
     cZeroVoltage = analogValue  * 5 + ADD_CONSTANT
     voltage = cZeroVoltage / CH_0_DIVISION_CONSTANT
     print(f"voltage {voltage}")
     return voltage
 
 def readCurrent():
-    channel7 = MCP3008(channel=7)
-    analogValue = float(channel7.value)
+    #channel7 = 40.0
+    analogValue = 89.9#float(channel7.value)
     cSevenVoltage = analogValue * (5/1023) 
     voltage_drop = 3.3 - cSevenVoltage
     resistor = 220

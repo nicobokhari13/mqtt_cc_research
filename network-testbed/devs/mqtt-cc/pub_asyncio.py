@@ -142,7 +142,7 @@ class AsyncMqtt:
         # set other necessary parameters for the client
         self.client.username_pw_set(username=utils._deviceMac)
         aioh = AsyncioHelper(self.loop, self.client)
-        self.client.connect("10.0.0.37", 1883, keepalive=900)
+        self.client.connect("localhost", 1883, keepalive=900)
         self.client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
         
         self.got_message = self.loop.create_future()
@@ -215,7 +215,7 @@ class AsyncMqtt:
 
 def run_async_publisher():
     print(f"{utils._deviceMac} Starting")
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_event_loop() #creating what allows threading happen
     loop.run_until_complete(AsyncMqtt(loop).main())
     loop.close()
     print(f"{utils._deviceMac} Finished")

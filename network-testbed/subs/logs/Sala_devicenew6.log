@@ -1,0 +1,3 @@
+/mnt/c/Users/sala_/OneDrive/Documents/MQTTRESEARCH/mqtt-cc-research/network-testbed/subs/Sala_devicenew6.py:150: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  client = mqtt.Client(client_id=CLIENT_ID,
+[MQTT] Connected (0) – sub 96:00:66:12/publisher/tasks=Temperature,Motion;Min_Frequency=11,10;Max_Latency=190,185;Accuracy=99,99;Energy=1.7,2.7;

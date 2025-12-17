@@ -29,7 +29,7 @@ def generateAssignments(changedTopic = None, subLeft = None):
     Einc = None
     Enew = None
     Eratio = None
-    topicsWithNoPublishers = db.topicsWithNoPublishers() # list of tuples with (topic, max_allowed_latency)
+    topicsWithNoPublishers = db.topicsWithNoPublishers() # list of tuples with (topic, max_allowed_latency,latency requirement)
     print(topicsWithNoPublishers)
     # get all topics where publish = 0 for all capable devices
 
@@ -37,11 +37,10 @@ def generateAssignments(changedTopic = None, subLeft = None):
     for task in topicsWithNoPublishers: 
         topic = task[0]
         freq = task[1]
-        print(f"Task: {task}")
+        #print(f"Task: {task}")
         # get devices capable of publishing to the topic
-        capableDevices = db.devicesCapableToPublish(topicName=topic) # list of tuples with (deviceMac, battery, executions)
-
-        # for each device
+        capableDevices = db.devicesCapableToPublish(topicName=topic) # list of tuples with (deviceMac, battery, executions,consumption)
+        #Here we are going to get the devices/publishers info like the 
         for device in capableDevices:
             mac = device[0]
             battery = device[1]
@@ -58,7 +57,7 @@ def generateAssignments(changedTopic = None, subLeft = None):
             # add publishings to the device with macAddr = mac, and set device frequencies
             # add current device publishing info to assignments (topics that the device currently publishes to)
 
-            # if there are topi cs the device already publishes to
+            # if there are topics the device already publishes to
             if devicePublishings:
                 # add them to the unit
                 publishers._units[mac].addPublishings(devicePublishings)
@@ -125,7 +124,7 @@ def generateAssignments(changedTopic = None, subLeft = None):
         
     db.closeDB()
     publishers.resetUnits()
-    print(f"generated final command = {publishers._generated_cmd}")
+    print(f"GENERATE ASSIGNMENTS FINAL COMMAND = {publishers._generated_cmd}")
     # while the publishers' unit information is reset, the assignments are preserved in generated_cmd
     return publishers._generated_cmd
 

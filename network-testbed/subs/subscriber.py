@@ -1,69 +1,114 @@
-import paho.mqtt.client as mqtt
-import sys # command line parameters
-import json # structure will & network latency msg
+import csv
+import json
+import os
+import sys
 import time
+from pathlib import Path
 
-#SUBS_NET_LAT_TOPIC = "subs/netlat" # receive network lat from subs for some window of time
-#WILL_TOPIC = "subs/will"
+import paho.mqtt.client as mqtt
+BROKER_HOST = "localhost"
+BROKER_PORT = 1883
 
-# The callback for when the client receives a CONNACK response from the broker.
+DEVICE_MAC = "89:33:44:44"  
+
+CONTROL_TOPIC = (
+    f"{DEVICE_MAC}/subscriber/"
+    "tasks=Motion,Humidity;"
+    "Max_Latency=290,335;"
+    "Accuracy=0.9,0.8;"
+    "Min_Frequency=5,10;"
+)
+
+# CSV output path
+CSV_PATH = Path("power_log1.csv")
+CSV_FILE = None
+CSV_WRITER = None
+SCRIPT_START = time.perf_counter()
+
+def ensure_csv():
+    """Open the CSV file (append) and write header if empty."""
+    global CSV_FILE, CSV_WRITER
+    if CSV_FILE is None:
+        CSV_FILE = CSV_PATH.open("a", newline="")
+        CSV_WRITER = csv.writer(CSV_FILE)
+        # Write header if file was empty
+        if CSV_FILE.tell() == 0:
+            CSV_WRITER.writerow(["time_seconds", "power"])
+        CSV_FILE.flush()
+
+
+def log_power(value: float):
+    """Log <elapsed time>, <power> to CSV."""
+    ensure_csv()
+    elapsed = time.perf_counter() - SCRIPT_START
+    CSV_WRITER.writerow([f"{elapsed:.4f}", f"{value:.2f}"])
+    CSV_FILE.flush()
+
 def on_connect(client, userdata, flags, rc):
-    #print("Connected with result code "+str(rc))
-    if(rc == 5):
-        #print("Authentication Error on Broker")
-        exit()
-    print(f"{userdata} is connected")
+    if rc != 0:
+        print(f"[SUB] Connection failed with code {rc}")
+        sys.exit(1)
 
-# The callback for when a message is published to the broker, and the backendreceives it
+    print("[SUB] Connected – subscribing to control topic…")
+    client.subscribe(CONTROL_TOPIC, qos=1)
+    print(f"[SUB] Subscribed to {CONTROL_TOPIC}")
+
+
 def on_message(client, userdata, msg):
+    """Handle control‑messages **and** data messages.
+
+    * Control messages look like "MAC/TaskName" → we subscribe to that topic.
+    * Data messages are JSON, we print them and log <power> to CSV.
+    """
     topic = msg.topic
-    payload = msg.payload.decode()
-    print("===============")
-    print(userdata)
-    print(f"Topic: {topic}")
-    print(f"Message: {len(payload)}")
-    print("===============")
-    print()
+    payload_raw = msg.payload.decode("utf-8")
 
-def subscribeToTopics(client, topicList:list):
-    for topic in topicList:
-        print(f"Subscribing to {topic}")
-        client.subscribe(topic,qos=1)
-        #print("sleeping now")
-        #time.sleep(8)
-# Executed when script is ran
+    print("\n[SUB] Incoming:")
+    print("  Topic:", topic)
+    print("  Payload:", payload_raw)
 
-# python3 subscriber.py <username> <password>
+    # ---------------- Control message (e.g. "AA:BB:CC/Temperature") ---------
+    if "/" in payload_raw and not payload_raw.lstrip()[0] == "{":
+        mac, task = payload_raw.split("/", 1)
+        full_topic = f"{mac}/{task}"
+        client.subscribe(full_topic, qos=1)
+        print(f"  → Subscribed to data topic '{full_topic}'")
+        return
+
+    try:
+        data = json.loads(payload_raw)
+    except json.JSONDecodeError:
+        print("  ! Payload is not valid JSON – skipping power log.")
+        return
+
+    # Extract a power‑like field (prefer 'power', then 'capacity', then 'voltage')
+    power_val = None
+    for key in ("power", "capacity", "voltage"):
+        if key in data:
+            power_val = float(data[key])
+            break
+
+    if power_val is not None:
+        log_power(power_val)
+        print(f"  → Logged power: {power_val:.2f}")
+    else:
+        print("  ! No power‑related field found – nothing logged.")
+
+
 def main():
-    subbed_topics = []
-
-        #USERNAME = sys.argv[1]
-        #PASSWORD = sys.argv[2]
-        # topic list delimited by commas, no spaces
-    sub_name = sys.argv[1]
-    print(sub_name)
-    subbed_topics = sys.argv[2].split(",") # list of strings 
-    # create MQTT Client
     client = mqtt.Client()
-    # Set Paho API functions to our defined functions
     client.on_connect = on_connect
     client.on_message = on_message
-    # Set username and password 
-    client.username_pw_set(username=sub_name)
-    # will_data = {
-    #     "clientid":USERNAME, 
-    #     "topics": subbed_topics
-    #     }
-    #will_payload = json.dumps(will_data)
-    #client.will_set(topic=WILL_TOPIC, payload=will_payload, qos=1)
-    # Connect client to the Broker
-    client.connect("10.0.0.37", 1883, keepalive=1000)
-    client.user_data_set(sub_name)
-    subscribeToTopics(client, topicList = subbed_topics)
 
-    # Run cliet forever
-    while True:
-        client.loop()
+    print(f"[SUB] Connecting to {BROKER_HOST}:{BROKER_PORT} …")
+    client.connect(BROKER_HOST, BROKER_PORT, keepalive=60)
+    client.loop_forever()
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n[SUB] Interrupted – closing CSV …")
+        if CSV_FILE:
+            CSV_FILE.close()

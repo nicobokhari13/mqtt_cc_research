@@ -19,8 +19,9 @@ class Processing_Unit:
 
     def updateConsumption(self, energyIncrease):
         self._consumption+=energyIncrease
-
+    
     def resetMinimum(self):
+        print(f"Contents of self._freqs: {self._freqs}")
         if self._freqs:
             self._freq_min = min(self._freqs)
         else:
@@ -146,7 +147,7 @@ class Devices:
     def __init__(self) -> None:
         # key = macAddr, value = Processing_Unit
         self._units: Dict[str, Processing_Unit] = dict()
-        self._generated_cmd: Dict[str, str] = dict()
+        self._generated_cmd: Dict[str, str] = dict() #sala 
 
     def addProcessingUnit(self, newUnit:Processing_Unit):
         self._units[newUnit._mac] = newUnit
@@ -167,8 +168,8 @@ class Devices:
     def addAssignmentsToCommand(self, deviceMac:str, taskList:str):
         self._generated_cmd[deviceMac] = taskList
         # example
-        # b8:27:eb:4f:15:95 : "{"sensor/temperature":10, "sensor/airquality": 34}""
-
+        # b8:27:eb:4f:15:95 : "{"sensor/temperature":10, "sensor/airquality": 34}"" Sala this is were the command format is.
+        # mac address       :   topic they want to subscribe to and latency
     
 
     

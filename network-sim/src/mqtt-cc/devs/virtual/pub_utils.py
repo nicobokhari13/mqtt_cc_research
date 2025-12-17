@@ -14,7 +14,7 @@ class PublisherUtils:
     # on Pi, grab mac address with terminal, not programmatically
     def __init__(self) -> None:
         # Other attributes/constants
-        self._STATUS_TOPIC = "sensor/status" # where IoT device sends status
+        self._STATUS_TOPIC = "sensor/status" # where IoT device sends status sala where device sends fire detection
         self._got_cmd = None # set to true and mqtt awaits self. to be set to False after msg is received
         self._end_round = None # 
         self._publishes = None
@@ -32,7 +32,7 @@ class PublisherUtils:
         self._IN_SIM = in_sim
         self._ENERGY_PER_EXECUTION = float(energy_per_execution)
         self._COMM_ENERGY = float(comm_energy)
-
+    #this is just where it derives where to publish to from the command. sala
     def setPublishing(self, pub_cmd:dict):
         if "None" in pub_cmd.keys():
             self._publishes = {}

@@ -1,6 +1,8 @@
 import sqlite3
 import time
 
+# This file contains all the sqlite querys
+
 class Database:
     _instance = None
     
@@ -10,7 +12,7 @@ class Database:
         return cls._instance
     
     def __init__(self) -> None:
-        self._db_path = "/home/devnico/repos/research/mqtt_cc_research/sqlite/mqttcc-oursystem.db"
+        self._db_path = "/mnt/c/Users/sala_/OneDrive/Documents/MQTTRESEARCH/mqtt-cc-research/brokers/broker-mqtt-cc/mosquitto/db/database.db"
 
     def openDB(self) -> None:
         self._db_conn = sqlite3.connect(self._db_path)
@@ -51,6 +53,22 @@ class Database:
                                 consumption FLOAT)'''
         self.execute_query_with_retry(query=deviceTable, requires_commit=True)
 
+    def createVEVDevicesTable(self) -> None:
+        #accuracy is going to be a json object displaying the accuracy for the 
+        #different types of sensing each object has different accuracy
+        #maximum_freq is the frequency in hz that the device can publish 
+        #task is going to be a listing all the tasks that the device supports. Its going to be a list object
+        #This is taken without consideration for the broker throughput damn sala
+        #energy is going to be expressed as a percentage remaining that is calculated based on the tasks the
+        #device is managing at the moment it sends an update message.
+        VEVDevicesTable = '''CREATE TABLE IF NOT EXISTS devices (
+                            deviceMac TEXT PRIMARY KEY,
+                            accuracy TEXT,
+                            tasks TEXT,
+                            maximum_freq TEXT,
+                            energy TEXT)'''
+        self.execute_query_with_retry(query=VEVDevicesTable, requires_commit=True)
+
     def createPublishTable(self) -> None:
         publishSelectTable = '''
                                 CREATE TABLE IF NOT EXISTS publish (
@@ -88,6 +106,19 @@ class Database:
                         )'''
         return self.execute_query_with_retry(query=selectQuery)
 
+    def SubtopicsWithNoPubs(self) -> list: #sala added function
+        selectQuery = '''SELECT DISTINCT subscription, max_allowed_latency, latency_req
+                        FROM publish
+                        LEFT JOIN subscriptions
+                        ON subscription = topic
+                        WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM publish AS subquery
+                        WHERE subscription = topic
+                        AND publishing = 1
+                        )'''
+        return self.execute_query_with_retry(query=selectQuery)
+
     def devicesCapableToPublish(self, topicName):
         selectQuery = '''SELECT devices.deviceMac, battery, executions, consumption
                         FROM devices
@@ -96,6 +127,13 @@ class Database:
                         WHERE topic = ?'''
         topicValue = (topicName,)
         return self.execute_query_with_retry(query=selectQuery, values=topicValue)
+
+    def capableToPublish(self,topicName):#sala
+        selectQuery = '''SELECT *
+                         FROM devices
+                         WHERE tasks = ?;
+                      '''
+        return self.execute_query_with_retry(query=selectQuery, values=topicName)
 
     def devicePublishing(self, MAC_ADDR):
         selectQuery = '''SELECT topic, max_allowed_latency
@@ -131,8 +169,10 @@ class Database:
 
         
     def addDevice(self, MAC_ADDR, BATTERY):
-        insertQuery = '''INSERT INTO devices (deviceMac, battery, executions, consumption) VALUES (?,?,?,?)'''
-        device_values = (MAC_ADDR, BATTERY, 0, 0)
+        #insertQuery = '''INSERT OR REPLACE INTO devices (deviceMac, battery, executions, consumption) VALUES (?, ?, ?, ?) '''
+        insertQuery = '''INSERT OR REPLACE INTO devices (deviceMac, accuracy, tasks, maximum_frequency, energy) VALUES (?, ?, ?, ?, ?) '''
+    # Replace existing row or insert a new one
+        device_values = (MAC_ADDR, BATTERY, None, None,None)  # executions and consumption default to 0
         self.execute_query_with_retry(query=insertQuery, values=device_values, requires_commit=True)
 
     def addDeviceTopicCapability(self, MAC_ADDR, TOPIC):

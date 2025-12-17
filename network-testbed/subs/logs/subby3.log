@@ -1,0 +1,2 @@
+/mnt/c/Users/sala_/OneDrive/Documents/MQTTRESEARCH/mqtt-cc-research/network-testbed/subs/Newsub3.py:35: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  cli=mqtt.Client(); cli.on_connect=on_connect; cli.on_message=on_message

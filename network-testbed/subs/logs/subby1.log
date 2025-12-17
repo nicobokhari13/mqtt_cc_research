@@ -1,0 +1,16 @@
+/mnt/c/Users/sala_/OneDrive/Documents/MQTTRESEARCH/mqtt-cc-research/network-testbed/subs/Newsub1.py:83: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  client = mqtt.Client()
+[SUB] Connecting to localhost:1883 …
+[SUB] Connected – sub 89:33:44:44/subscriber/tasks=Motion,Humidity;Max_Latency=290,335;Accuracy=0.9,0.8;Min_Frequency=5,10;
+
+[SUB] Topic=89:33:44:44/subscriber/tasks=Motion,Humidity;Max_Latency=290,335;Accuracy=0.9,0.8;Min_Frequency=5,10;
+      Payload=55:22:57:12/Humidity
+      ↳ now subscribing to 55:22:57:12/Humidity
+
+[SUB] Topic=89:33:44:44/subscriber/tasks=Motion,Humidity;Max_Latency=290,335;Accuracy=0.9,0.8;Min_Frequency=5,10;
+      Payload=55:22:57:12/Motion
+      ↳ now subscribing to 55:22:57:12/Motion
+[SUB] Connected – sub 89:33:44:44/subscriber/tasks=Motion,Humidity;Max_Latency=290,335;Accuracy=0.9,0.8;Min_Frequency=5,10;
+[SUB] Connected – sub 89:33:44:44/subscriber/tasks=Motion,Humidity;Max_Latency=290,335;Accuracy=0.9,0.8;Min_Frequency=5,10;
+[SUB] Connected – sub 89:33:44:44/subscriber/tasks=Motion,Humidity;Max_Latency=290,335;Accuracy=0.9,0.8;Min_Frequency=5,10;
+[SUB] Connected – sub 89:33:44:44/subscriber/tasks=Motion,Humidity;Max_Latency=290,335;Accuracy=0.9,0.8;Min_Frequency=5,10;

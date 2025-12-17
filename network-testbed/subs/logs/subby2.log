@@ -1,0 +1,7 @@
+/mnt/c/Users/sala_/OneDrive/Documents/MQTTRESEARCH/mqtt-cc-research/network-testbed/subs/Newsub2.py:38: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  cli = mqtt.Client(); cli.on_connect = on_connect; cli.on_message = on_message
+[SUB‑MH] sub 10:11:12:13/subscriber/tasks=Motion,Humidity;Max_Latency=220,330;Accuracy=0.90,0.80;Min_Frequency=4,10;
+[SUB‑MH] sub 10:11:12:13/subscriber/tasks=Motion,Humidity;Max_Latency=220,330;Accuracy=0.90,0.80;Min_Frequency=4,10;
+[SUB‑MH] sub 10:11:12:13/subscriber/tasks=Motion,Humidity;Max_Latency=220,330;Accuracy=0.90,0.80;Min_Frequency=4,10;
+[SUB‑MH] sub 10:11:12:13/subscriber/tasks=Motion,Humidity;Max_Latency=220,330;Accuracy=0.90,0.80;Min_Frequency=4,10;
+[SUB‑MH] sub 10:11:12:13/subscriber/tasks=Motion,Humidity;Max_Latency=220,330;Accuracy=0.90,0.80;Min_Frequency=4,10;

@@ -13,7 +13,7 @@ class ProtoUtils:
         self._PASSWORD = "adminproto"
         # Device handling topics
         self._STATUS_TOPIC = "sensor/status" # subscribe
-        self._CMD_TOPIC = "sensor/cmd/" # publish
+        self._CMD_TOPIC = "sensor/cmd/" # publish the command. 
         
         # Subscriber handling topics
         self._SUBS_WILL_TOPIC = "subs/will" # subscribe 
@@ -21,7 +21,7 @@ class ProtoUtils:
         self._LAT_CHANGE_TOPIC = "subs/change" # subscribe
 
         # Other vars 
-        self._timeWindow = 0 # set in proto_client.py through input argument
+        self._timeWindow = 10# set in proto_client.py through input argument
         # self._ranAlgo = None
         self._gotStatus = None
         self._gotCmdToSend = None
